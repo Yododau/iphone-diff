@@ -16,6 +16,7 @@ MORIMORI_URL = "https://www.morimori-kaitori.jp/search?sk=iPhone17&page=1&price-
 APPLE_BUY_PAGES = {
     "iPhone 17": "https://www.apple.com/jp/shop/buy-iphone/iphone-17",
     "iPhone 17 Pro": "https://www.apple.com/jp/shop/buy-iphone/iphone-17-pro",
+    "iPhone 17 Pro Max": "https://www.apple.com/jp/shop/buy-iphone/iphone-17-pro",
     "iPhone Air": "https://www.apple.com/jp/shop/buy-iphone/iphone-air",
 }
 
@@ -54,7 +55,7 @@ def extract_capacity(model_text: str) -> Optional[str]:
     """
     Cố gắng bắt dung lượng nếu có trong chuỗi (128GB, 256GB, 512GB, 1TB, 2TB).
     """
-    m = re.search(r"\b(128GB|256GB|512GB|1TB|2TB)\b", model_text, re.IGNORECASE)
+    m = re.search(r"\b(128|256|512)\s*G\s*B\b|\b(1|2)\s*T\s*B\b", text, re.IGNORECASE)
     if m:
         return m.group(1).upper()
     return None
