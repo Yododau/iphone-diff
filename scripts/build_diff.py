@@ -2,7 +2,7 @@ import json
 import re
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple
-
+from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
@@ -27,6 +27,21 @@ HEADERS = {
     )
 }
 
+def load_apple_price_table() -> Dict[Tuple[str, str], int]:
+    path = Path(__file__).resolve().parent / "apple_prices.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    out: Dict[Tuple[str, str], int] = {}
+    for model, caps in data.items():
+        for cap, price in caps.items():
+            try:
+                price_int = int(price)
+            except Exception:
+                continue
+            if price_int <= 0:
+                continue
+            out[(model, cap)] = price_int
+    return out
 
 # -------------------------
 # Helpers
@@ -259,13 +274,13 @@ def build_diff_rows(
 
 
 def main():
-    apple = scrape_apple_prices_by_capacity()
+    apple = load_apple_price_table()
     morimori = scrape_morimori_new_prices()
     rows = build_diff_rows(apple, morimori)
 
-    print("Done. rows:", len(rows))
     print("Apple pairs:", len(apple))
     print("Morimori pairs:", len(morimori))
+    print("Done. rows:", len(rows))
 
     now = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
     meta = {
