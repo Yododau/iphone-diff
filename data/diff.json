@@ -1,16 +1,65 @@
 [
   {
+    "model": "iPhone 17 Pro Max",
+    "capacity": "2TB",
+    "apple_price": 194800,
+    "morimori_new_price": 325463,
+    "diff": 130663
+  },
+  {
+    "model": "iPhone 17 Pro Max",
+    "capacity": "1TB",
+    "apple_price": 194800,
+    "morimori_new_price": 275658,
+    "diff": 80858
+  },
+  {
+    "model": "iPhone 17 Pro",
+    "capacity": "1TB",
+    "apple_price": 194800,
+    "morimori_new_price": 249230,
+    "diff": 54430
+  },
+  {
+    "model": "iPhone 17 Pro Max",
+    "capacity": "512GB",
+    "apple_price": 194800,
+    "morimori_new_price": 240590,
+    "diff": 45790
+  },
+  {
+    "model": "iPhone 17 Pro",
+    "capacity": "512GB",
+    "apple_price": 194800,
+    "morimori_new_price": 219753,
+    "diff": 24953
+  },
+  {
+    "model": "iPhone 17 Pro Max",
+    "capacity": "256GB",
+    "apple_price": 194800,
+    "morimori_new_price": 209081,
+    "diff": 14281
+  },
+  {
+    "model": "iPhone 17",
+    "capacity": "512GB",
+    "apple_price": 164800,
+    "morimori_new_price": 165679,
+    "diff": 879
+  },
+  {
     "model": "iPhone 17 Pro",
     "capacity": "256GB",
-    "apple_price": 114800,
+    "apple_price": 194800,
     "morimori_new_price": 187736,
-    "diff": 72936
+    "diff": -7064
   },
   {
     "model": "iPhone 17",
     "capacity": "256GB",
-    "apple_price": 79800,
+    "apple_price": 164800,
     "morimori_new_price": 134169,
-    "diff": 54369
+    "diff": -30631
   }
 ]
