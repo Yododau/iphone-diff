@@ -51,13 +51,19 @@ def norm_spaces(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
-def extract_capacity(model_text: str) -> Optional[str]:
-    """
-    Cố gắng bắt dung lượng nếu có trong chuỗi (128GB, 256GB, 512GB, 1TB, 2TB).
-    """
-    m = re.search(r"\b(128|256|512)\s*G\s*B\b|\b(1|2)\s*T\s*B\b", text, re.IGNORECASE)
-    if m:
-        return m.group(1).upper()
+def extract_capacity(s: str) -> Optional[str]:
+    # Bắt nhiều kiểu viết: 256GB / 256 GB / 256G B / 1TB / 1 T B ...
+    m = re.search(r"\b(128|256|512)\s*G\s*B\b|\b(1|2)\s*T\s*B\b", s, re.IGNORECASE)
+    if not m:
+        return None
+
+    gb = m.group(1)  # 128/256/512 hoặc None
+    tb = m.group(2)  # 1/2 hoặc None
+
+    if gb:
+        return f"{gb}GB"
+    if tb:
+        return f"{tb}TB"
     return None
 
 
@@ -116,33 +122,66 @@ def scrape_apple_base_prices() -> Dict[str, int]:
     return out
 
 def scrape_apple_prices_by_capacity() -> Dict[Tuple[str, str], int]:
+    """
+    Trả về dict[(model, capacity)] = apple_price
+
+    Chiến lược mới:
+    - Duyệt script text
+    - Với mỗi model, tìm các capacity xuất hiện theo thứ tự
+    - Với mỗi capacity, tìm giá 円 gần nhất SAU capacity (trong một cửa sổ lớn hơn)
+    - Nếu có nhiều giá, chọn giá nhỏ nhất >= 50000 trong cửa sổ đó (thường là giá máy)
+    - Loại bỏ trường hợp trùng giá bằng cách ưu tiên giá tăng dần theo capacity
+    """
     out: Dict[Tuple[str, str], int] = {}
     cap_pat = re.compile(r"\b(128GB|256GB|512GB|1TB|2TB)\b", re.IGNORECASE)
+
+    def pick_price_after(text: str, pos: int) -> Optional[int]:
+        # tìm trong đoạn sau capacity (cửa sổ đủ lớn để bắt đúng price tier)
+        window = text[pos: min(len(text), pos + 2000)]
+        yens = parse_yen_values(window)
+        big = [v for v in yens if v >= 50000]
+        if not big:
+            return None
+        return min(big)
 
     for model, url in APPLE_BUY_PAGES.items():
         html = fetch(url)
         soup = BeautifulSoup(html, "lxml")
 
-        for sc in soup.find_all("script"):
-            s = sc.string
-            if not s:
+        # gom tất cả script thành 1 chuỗi lớn để tìm theo thứ tự xuất hiện
+        script_text = "\n".join([sc.string for sc in soup.find_all("script") if sc.string])
+
+        # tìm capacity theo thứ tự xuất hiện
+        found_caps = []
+        for m in cap_pat.finditer(script_text):
+            cap = m.group(1).upper()
+            found_caps.append((cap, m.end()))
+
+        # lấy giá cho từng capacity
+        temp: Dict[str, int] = {}
+        for cap, pos in found_caps:
+            if cap in temp:
                 continue
+            price = pick_price_after(script_text, pos)
+            if price is not None:
+                temp[cap] = price
 
-            for m in cap_pat.finditer(s):
-                cap = m.group(1).upper()
-                start = max(0, m.start() - 600)
-                end = min(len(s), m.end() + 600)
-                window = s[start:end]
+        # hậu xử lý: loại trùng giá "base" sai
+        # nếu 128 và 256 cùng giá -> bỏ 256, đợi match khác xuất hiện (hoặc giữ 128)
+        # và cố gắng giữ giá tăng theo dung lượng
+        cap_order = ["128GB", "256GB", "512GB", "1TB", "2TB"]
+        last = 0
+        cleaned: Dict[str, int] = {}
+        for cap in cap_order:
+            if cap not in temp:
+                continue
+            p = temp[cap]
+            if p >= last:
+                cleaned[cap] = p
+                last = p
 
-                yens = parse_yen_values(window)
-                big = [v for v in yens if v >= 50000]
-                if not big:
-                    continue
-
-                cand = min(big)
-                key = (model, cap)
-                if key not in out or cand < out[key]:
-                    out[key] = cand
+        for cap, price in cleaned.items():
+            out[(model, cap)] = price
 
     return out
 
