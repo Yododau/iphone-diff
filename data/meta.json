@@ -1,5 +1,5 @@
 {
-  "generated_at_jst": "2026-01-10 01:56:22",
+  "generated_at_jst": "2026-01-10 02:06:24",
   "sources": {
     "morimori": "https://www.morimori-kaitori.jp/search?sk=iPhone17&page=1&price-list=true",
     "apple": {
@@ -10,7 +10,7 @@
     }
   },
   "debug_counts": {
-    "apple_models": 17,
+    "apple_models": 10,
     "morimori_models": 9,
     "matched_rows": 9
   }
