@@ -1,5 +1,14 @@
 [
-  {"model":"iPhone 17 Pro 512GB","diff":12400},
-  {"model":"iPhone 17 128GB","diff":1800},
-  {"model":"iPhone Air 128GB","diff":-2100}
+  {
+    "model": "iPhone 17 Pro",
+    "apple_price": 86800,
+    "morimori_new_price": 249230,
+    "diff": 162430
+  },
+  {
+    "model": "iPhone 17",
+    "apple_price": 79800,
+    "morimori_new_price": 165679,
+    "diff": 85879
+  }
 ]
