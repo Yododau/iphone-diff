@@ -1,14 +1,16 @@
 [
   {
     "model": "iPhone 17 Pro",
-    "apple_price": 86800,
-    "morimori_new_price": 249230,
-    "diff": 162430
+    "capacity": "256GB",
+    "apple_price": 114800,
+    "morimori_new_price": 187736,
+    "diff": 72936
   },
   {
     "model": "iPhone 17",
+    "capacity": "256GB",
     "apple_price": 79800,
-    "morimori_new_price": 165679,
-    "diff": 85879
+    "morimori_new_price": 134169,
+    "diff": 54369
   }
 ]

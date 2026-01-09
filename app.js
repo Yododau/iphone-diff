@@ -27,7 +27,7 @@ async function load(){
     const div = document.createElement("div");
     div.className = "row " + (x.diff > 0 ? "profit" : "loss");
     div.innerHTML = `
-      <div class="model">${x.model}</div>
+      <div class="model">${x.model} ${x.capacity || ""}</div>
       <div class="diff">${yen(x.diff)}</div>
     `;
     list.appendChild(div);

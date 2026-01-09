@@ -114,26 +114,48 @@ def scrape_apple_base_prices() -> Dict[str, int]:
 
     return out
 
+def scrape_apple_prices_by_capacity() -> Dict[Tuple[str, str], int]:
+    out: Dict[Tuple[str, str], int] = {}
+    cap_pat = re.compile(r"\b(128GB|256GB|512GB|1TB|2TB)\b", re.IGNORECASE)
+
+    for model, url in APPLE_BUY_PAGES.items():
+        html = fetch(url)
+        soup = BeautifulSoup(html, "lxml")
+
+        for sc in soup.find_all("script"):
+            s = sc.string
+            if not s:
+                continue
+
+            for m in cap_pat.finditer(s):
+                cap = m.group(1).upper()
+                start = max(0, m.start() - 600)
+                end = min(len(s), m.end() + 600)
+                window = s[start:end]
+
+                yens = parse_yen_values(window)
+                big = [v for v in yens if v >= 50000]
+                if not big:
+                    continue
+
+                cand = min(big)
+                key = (model, cap)
+                if key not in out or cand < out[key]:
+                    out[key] = cand
+
+    return out
+
 
 # -------------------------
 # Morimori: lấy giá thu mua "新品"
 # -------------------------
-def scrape_morimori_new_prices() -> Dict[str, int]:
-    """
-    Lấy giá thu mua (新品) trên Morimori.
-    Vì cấu trúc HTML có thể thay đổi, ta làm kiểu "best-effort":
-    - đọc tất cả dòng trong table
-    - chỉ lấy dòng có chữ '新品'
-    - đoán model (iPhone 17 / 17 Pro / 17 Pro Max / Air) từ text
-    - lấy giá yen lớn nhất trong dòng đó làm đại diện (thường là '通常' hoặc max)
-    """
+def scrape_morimori_new_prices() -> Dict[Tuple[str, str], int]:
     html = fetch(MORIMORI_URL)
     soup = BeautifulSoup(html, "lxml")
 
-    model_to_prices: Dict[str, List[int]] = {}
+    out: Dict[Tuple[str, str], int] = {}
 
-    tables = soup.find_all("table")
-    for table in tables:
+    for table in soup.find_all("table"):
         for tr in table.find_all("tr"):
             cols = [norm_spaces(td.get_text(" ")) for td in tr.find_all(["td", "th"])]
             if not cols:
@@ -143,7 +165,10 @@ def scrape_morimori_new_prices() -> Dict[str, int]:
             if "新品" not in row:
                 continue
 
-            # đoán model
+            cap = extract_capacity(row)
+            if not cap:
+                continue
+
             model = None
             if "Pro Max" in row or "ProMax" in row:
                 model = "iPhone 17 Pro Max"
@@ -161,12 +186,9 @@ def scrape_morimori_new_prices() -> Dict[str, int]:
             if not yens:
                 continue
 
-            model_to_prices.setdefault(model, []).append(max(yens))
-
-    # đại diện: lấy giá cao nhất
-    out: Dict[str, int] = {}
-    for model, arr in model_to_prices.items():
-        out[model] = max(arr)
+            price = max(yens)
+            key = (model, cap)
+            out[key] = max(out.get(key, 0), price)
 
     return out
 
@@ -174,30 +196,36 @@ def scrape_morimori_new_prices() -> Dict[str, int]:
 # -------------------------
 # Build output JSON
 # -------------------------
-def build_diff_rows(apple: Dict[str, int], morimori: Dict[str, int]) -> List[dict]:
+def build_diff_rows(
+    apple: Dict[Tuple[str, str], int],
+    morimori: Dict[Tuple[str, str], int],
+) -> List[dict]:
     rows: List[dict] = []
 
-    # Chỉ ghép những model có cả 2 nguồn
-    for model in sorted(set(apple.keys()) & set(morimori.keys())):
-        diff = morimori[model] - apple[model]
+    for (model, cap) in sorted(set(apple.keys()) & set(morimori.keys())):
+        diff = morimori[(model, cap)] - apple[(model, cap)]
         rows.append(
             {
                 "model": model,
-                "apple_price": apple[model],
-                "morimori_new_price": morimori[model],
+                "capacity": cap,
+                "apple_price": apple[(model, cap)],
+                "morimori_new_price": morimori[(model, cap)],
                 "diff": diff,
             }
         )
 
-    # sort theo diff giảm dần (dễ nhìn “mua cái nào”)
     rows.sort(key=lambda x: x["diff"], reverse=True)
     return rows
 
 
 def main():
-    apple = scrape_apple_base_prices()
+    apple = scrape_apple_prices_by_capacity()
     morimori = scrape_morimori_new_prices()
     rows = build_diff_rows(apple, morimori)
+
+    print("Done. rows:", len(rows))
+    print("Apple pairs:", len(apple))
+    print("Morimori pairs:", len(morimori))
 
     now = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
     meta = {
